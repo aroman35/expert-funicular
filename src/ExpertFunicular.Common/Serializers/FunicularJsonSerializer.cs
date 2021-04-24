@@ -3,7 +3,7 @@ using Newtonsoft.Json;
 
 namespace ExpertFunicular.Common.Serializers
 {
-    public class PipeJsonSerializer : IPipeSerializer
+    public class FunicularJsonSerializer : IFunicularSerializer
     {
         public byte[] Serialize<TMessage>(TMessage message) where TMessage : class
         {

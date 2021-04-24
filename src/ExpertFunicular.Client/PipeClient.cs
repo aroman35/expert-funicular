@@ -8,10 +8,10 @@ using ProtoBuf;
 
 namespace ExpertFunicular.Client
 {
-    internal class PipeClient : IDisposable
+    internal class PipeClient : IPipeClient
     {
         private readonly NamedPipeClientStream _pipeClient;
-        private readonly IPipeSerializer _serializer;
+        private readonly IFunicularSerializer _serializer;
         private readonly string _pipeName;
 
         public PipeClient(string pipeName)
@@ -22,7 +22,7 @@ namespace ExpertFunicular.Client
                 pipeName,
                 PipeDirection.InOut);
 
-            _serializer = new PipeProtobufSerializer();
+            _serializer = new FunicularProtobufSerializer();
         }
 
         public bool ReadMessage(out FunicularMessage message, int timeoutMs = 60_000)
@@ -80,5 +80,11 @@ namespace ExpertFunicular.Client
         {
             _pipeClient.Dispose();
         }
+    }
+
+    internal interface IPipeClient : IDisposable
+    {
+        bool ReadMessage(out FunicularMessage message, int timeoutMs = 60_000);
+        void Send(FunicularMessage message);
     }
 }

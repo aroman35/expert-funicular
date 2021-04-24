@@ -3,7 +3,7 @@ using ProtoBuf;
 
 namespace ExpertFunicular.Common.Serializers
 {
-    public class PipeProtobufSerializer : IPipeSerializer
+    public class FunicularProtobufSerializer : IFunicularSerializer
     {
         public byte[] Serialize<TMessage>(TMessage message) where TMessage : class
         {

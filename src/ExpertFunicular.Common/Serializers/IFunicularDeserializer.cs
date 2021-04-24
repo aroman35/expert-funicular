@@ -3,7 +3,7 @@ using System.IO;
 
 namespace ExpertFunicular.Common.Serializers
 {
-    public interface IPipeDeserializer
+    public interface IFunicularDeserializer
     {
         TMessage Deserialize<TMessage>(byte[] array)
             where TMessage : class;

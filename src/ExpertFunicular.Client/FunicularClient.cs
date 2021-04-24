@@ -4,13 +4,14 @@ using ExpertFunicular.Common.Messaging;
 
 namespace ExpertFunicular.Client
 {
-    public class FunicularClient : IDisposable
+    public class FunicularClient : IFunicularClient
     {
-        private readonly PipeClient _pipeClient;
+        private readonly IPipeClient _pipeClient;
+        private readonly object _sync = new();
 
-        public FunicularClient(string pipeName)
+        internal FunicularClient(IPipeClient pipeClient)
         {
-            _pipeClient = new PipeClient(pipeName);
+            _pipeClient = pipeClient;
         }
 
         public TResponse Send<TRequest, TResponse>(string uri, TRequest request, int timeoutMs = 30_000, ContentType desiredContent = ContentType.Protobuf)
@@ -20,27 +21,28 @@ namespace ExpertFunicular.Client
             requestMessage.MessageType = FunicularMessageType.Request;
             requestMessage.CreatedTimeUtc = DateTime.UtcNow;
             requestMessage.Route = uri;
-            requestMessage.Content = desiredContent;
-            
-            _pipeClient.Send(requestMessage);
 
-            if (!_pipeClient.ReadMessage(out var responseMessage, timeoutMs))
-                throw new FunicularPipeException($"Nothing received within {timeoutMs} ms", requestMessage.Route);
+            lock (_sync)
+            {
+                _pipeClient.Send(requestMessage);
 
-            return HandleResponse<TResponse>(responseMessage);
+                if (!_pipeClient.ReadMessage(out var responseMessage, timeoutMs))
+                    throw new FunicularPipeException($"Nothing received within {timeoutMs} ms", requestMessage.Route);
+
+                return HandleResponse<TResponse>(responseMessage);
+            }
         }
 
         public void Send<TRequest>(string uri, TRequest request, ContentType desiredContent = ContentType.Protobuf)
         {
             var requestMessage = new FunicularMessage();
-            requestMessage.SetPayload(request);
+            requestMessage.SetPayload(request, desiredContent);
             requestMessage.MessageType = FunicularMessageType.Request;
             requestMessage.CreatedTimeUtc = DateTime.UtcNow;
             requestMessage.Route = uri;
             requestMessage.IsPost = true;
-            requestMessage.Content = desiredContent;
-
-            _pipeClient.Send(requestMessage);
+            
+            lock (_sync) _pipeClient.Send(requestMessage);
         }
 
         public TResponse Get<TResponse>(string uri, int timeoutMs = 30_000, ContentType desiredContent = ContentType.Protobuf)
@@ -49,14 +51,16 @@ namespace ExpertFunicular.Client
             requestMessage.MessageType = FunicularMessageType.Request;
             requestMessage.CreatedTimeUtc = DateTime.UtcNow;
             requestMessage.Route = uri;
-            requestMessage.Content = desiredContent;
 
-            _pipeClient.Send(requestMessage);
-            
-            if (!_pipeClient.ReadMessage(out var responseMessage, timeoutMs))
-                throw new FunicularPipeException($"Nothing received within {timeoutMs} ms", requestMessage.Route);
+            lock (_sync)
+            {
+                _pipeClient.Send(requestMessage);
+                
+                if (!_pipeClient.ReadMessage(out var responseMessage, timeoutMs))
+                    throw new FunicularPipeException($"Nothing received within {timeoutMs} ms", requestMessage.Route);
 
-            return HandleResponse<TResponse>(responseMessage);
+                return HandleResponse<TResponse>(responseMessage);
+            }
         }
 
         private TResponse HandleResponse<TResponse>(FunicularMessage pipeMessage)
@@ -67,11 +71,6 @@ namespace ExpertFunicular.Client
                 throw new FunicularPipeException("Received response but expected request", pipeMessage.Route);
                 
             return (TResponse) pipeMessage.GetPayload(typeof(TResponse));
-        }
-
-        public void Dispose()
-        {
-            _pipeClient.Dispose();
         }
     }
 }

@@ -1,30 +1,30 @@
 ﻿using System;
 using System.IO;
 using System.Text;
+using Newtonsoft.Json;
 
 namespace ExpertFunicular.Common.Serializers
 {
-    public class PipeTextDeserializer : IPipeDeserializer
+    public class FunicularJsonDeserializer : IFunicularDeserializer
     {
         public TMessage Deserialize<TMessage>(byte[] array) where TMessage : class
         {
-            if (typeof(TMessage) == typeof(string))
-                return Encoding.UTF8.GetString(array) as TMessage;
-            throw new ArgumentException("Only strings are supported");
+            var json = Encoding.UTF8.GetString(array);
+            return JsonConvert.DeserializeObject<TMessage>(json);
         }
 
         public TMessage Deserialize<TMessage>(Stream encoded) where TMessage : class
         {
             using var memoryStream = new MemoryStream();
             encoded.CopyTo(memoryStream);
-            throw new ArgumentException("Only strings are supported");
+            memoryStream.Seek(0, SeekOrigin.Begin);
+            return Deserialize<TMessage>(memoryStream.ToArray());
         }
 
         public object Deserialize(Type type, byte[] array)
         {
-            if (type == typeof(string))
-                return Encoding.UTF8.GetString(array);
-            throw new ArgumentException("Only strings are supported");
+            var json = Encoding.UTF8.GetString(array);
+            return JsonConvert.DeserializeObject(json, type);
         }
     }
 }

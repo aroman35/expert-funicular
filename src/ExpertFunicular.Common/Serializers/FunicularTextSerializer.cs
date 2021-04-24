@@ -3,7 +3,7 @@ using System.Text;
 
 namespace ExpertFunicular.Common.Serializers
 {
-    public class PipeTextSerializer : IPipeSerializer
+    public class FunicularTextSerializer : IFunicularSerializer
     {
         public byte[] Serialize<TMessage>(TMessage message) where TMessage : class
         {

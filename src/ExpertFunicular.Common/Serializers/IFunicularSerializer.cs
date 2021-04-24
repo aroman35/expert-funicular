@@ -1,6 +1,6 @@
 namespace ExpertFunicular.Common.Serializers
 {
-    public interface IPipeSerializer
+    public interface IFunicularSerializer
     {
         byte[] Serialize<TMessage>(TMessage message)
             where TMessage : class;

@@ -9,17 +9,17 @@ using ProtoBuf;
 
 namespace ExpertFunicular.Server
 {
-    public class PipeServer : IDisposable, IAsyncDisposable
+    internal class FunicularServer : IFunicularServer
     {
         private readonly NamedPipeServerStream _pipeServer;
-        private readonly IPipeSerializer _serializer;
-        internal string PipeName { get; }
-        internal bool IsConnected => _pipeServer.IsConnected;
-        internal bool IsTerminated { get; private set; }
+        private readonly IFunicularSerializer _serializer;
+        public string PipeName { get; }
+        public bool IsConnected => _pipeServer.IsConnected;
+        public bool IsTerminated { get; private set; }
 
         private Action<Exception, string> _exceptionHandler;
 
-        public PipeServer(string pipeName, IPipeSerializer serializer)
+        public FunicularServer(string pipeName)
         {
             _pipeServer = new NamedPipeServerStream(pipeName,
                 PipeDirection.InOut,
@@ -28,7 +28,7 @@ namespace ExpertFunicular.Server
                 PipeOptions.Asynchronous);
 
             PipeName = pipeName;
-            _serializer = serializer;
+            _serializer = new FunicularProtobufSerializer();
         }
         
         public async Task SendAsync(FunicularMessage message, CancellationToken cancellationToken = default)
@@ -54,7 +54,7 @@ namespace ExpertFunicular.Server
             }
         }
 
-        public async Task ReceivingLoop(Func<FunicularMessage, CancellationToken, Task> payloadHandler, CancellationToken cancellationToken)
+        public async Task ReceivingLoop(Func<FunicularMessage, CancellationToken, Task> payloadHandler, CancellationToken cancellationToken = default)
         {
             while (!cancellationToken.IsCancellationRequested && !IsTerminated)
             {
@@ -114,7 +114,7 @@ namespace ExpertFunicular.Server
             }
         }
 
-        private void SetErrorHandler(Action<Exception, string> handler)
+        public void SetErrorHandler(Action<Exception, string> handler)
         {
             _exceptionHandler = handler;
         }

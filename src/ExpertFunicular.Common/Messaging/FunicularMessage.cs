@@ -16,7 +16,7 @@ namespace ExpertFunicular.Common.Messaging
         [ProtoMember(4)] public byte[] CompressedMessage { get; private set; }
         [ProtoMember(5)] public string ErrorMessage { get; set; }
         [ProtoMember(6)] public bool IsPost { get; set; }
-        [ProtoMember(7)] public ContentType Content { get; set; } = ContentType.Protobuf;
+        [ProtoMember(7)] public ContentType Content { get; private set; } = ContentType.Protobuf;
         [ProtoMember(8)] public string Md5Hash { get; private set; }
         [ProtoMember(9)] public string PipeName { get; set; }
         [ProtoIgnore] public bool IsError => !string.IsNullOrEmpty(ErrorMessage);
@@ -34,11 +34,11 @@ namespace ExpertFunicular.Common.Messaging
             if (!IsValid())
                 throw new Exception("Message is invalid");
             
-            IPipeDeserializer deserializer = Content switch
+            IFunicularDeserializer deserializer = Content switch
             {
-                ContentType.Protobuf => new PipeProtobufDeserializer(),
-                ContentType.Json => new PipeJsonDeserializer(),
-                ContentType.Text => new PipeTextDeserializer(),
+                ContentType.Protobuf => new FunicularProtobufDeserializer(),
+                ContentType.Json => new FunicularJsonDeserializer(),
+                ContentType.Text => new FunicularTextDeserializer(),
                 ContentType.NotSet => throw new FunicularException("Content type is not set"),
                 _ => throw new FunicularException("Content type is not set")
             };
@@ -46,13 +46,14 @@ namespace ExpertFunicular.Common.Messaging
             return deserializer.Deserialize(messageType, CompressedMessage);
         }
 
-        public void SetPayload(object payload, bool onErrorUseJson = true)
+        public void SetPayload(object payload, ContentType content = ContentType.Protobuf, bool onErrorUseJson = true)
         {
-            IPipeSerializer serializer = Content switch
+            Content = content;
+            IFunicularSerializer serializer = Content switch
             {
-                ContentType.Protobuf => new PipeProtobufSerializer(),
-                ContentType.Json => new PipeJsonSerializer(),
-                ContentType.Text => new PipeTextSerializer(),
+                ContentType.Protobuf => new FunicularProtobufSerializer(),
+                ContentType.Json => new FunicularJsonSerializer(),
+                ContentType.Text => new FunicularTextSerializer(),
                 ContentType.NotSet => throw new FunicularException("Content type is not set"),
                 _ => throw new FunicularException("Content type is not set")
             };
@@ -64,7 +65,7 @@ namespace ExpertFunicular.Common.Messaging
             {
                 if (onErrorUseJson)
                 {
-                    CompressedMessage = new PipeJsonSerializer().Serialize(payload);
+                    CompressedMessage = new FunicularJsonSerializer().Serialize(payload);
                     Content = ContentType.Json;
                 }
             }
@@ -72,7 +73,6 @@ namespace ExpertFunicular.Common.Messaging
             GetHash();
         }
         
-        // TODO: test
         private string GetHash()
         {
             MD5 md5 = new MD5CryptoServiceProvider();

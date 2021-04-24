@@ -11,15 +11,15 @@ using ExpertFunicular.Common.Messaging;
 namespace ExpertFunicular.Server
 {
     [PipeRoute("base")]
-    public abstract class PipeController
+    public abstract class FunicularController
     {
-        public FunicularMessage RequestMessage { get; private set; }
+        protected FunicularMessage RequestMessage { get; private set; }
         public FunicularMessage ResponseMessage { get; private set; }
         protected string Route;
         
         private IDictionary<string, MethodInfo> _actionMethodInputParameters;
 
-        protected PipeController()
+        protected FunicularController()
         {
             ValidateControllerInitialState();
         }
@@ -80,8 +80,7 @@ namespace ExpertFunicular.Server
                 ResponseMessage = new FunicularMessage
                 {
                     MessageType = FunicularMessageType.Response,
-                    Content = RequestMessage.Content,
-                    Route = "response"
+                    Route = Route
                 };
                 ResponseMessage.SetPayload(entireResult);
             }
@@ -91,7 +90,7 @@ namespace ExpertFunicular.Server
         {
             var task = (Task)@this.Invoke(this, parameters);
             if (task == null)
-                throw new ArgumentNullException();
+                throw  new ArgumentNullException();
             
             await task.ConfigureAwait(false);
             var resultProperty = task.GetType().GetProperty("Result");

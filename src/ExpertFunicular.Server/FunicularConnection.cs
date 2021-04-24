@@ -10,21 +10,21 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace ExpertFunicular.Server
 {
-    public class PipeRouter : IDisposable
+    internal class FunicularConnection : IFunicularConnection
     {
         private readonly IDictionary<string, Type> _baseRoutePaths;
         private readonly IServiceProvider _serviceProvider;
-        private readonly PipeServer _pipeServer;
+        private readonly IFunicularServer _funicularServer;
 
-        public PipeRouter(
-            PipeServer pipeServer,
+        internal FunicularConnection(
+            IFunicularServer funicularServer,
             IServiceProvider serviceProvider)
         {
-            _pipeServer = pipeServer;
+            _funicularServer = funicularServer;
             _serviceProvider = serviceProvider;
             _baseRoutePaths = AppDomain.CurrentDomain.GetAssemblies()
                 .SelectMany(s => s.GetTypes())
-                .Where(p => typeof(PipeController).IsAssignableFrom(p) && !p.IsAbstract)
+                .Where(p => typeof(FunicularController).IsAssignableFrom(p) && !p.IsAbstract)
                 .ToDictionary(
                     x => x.GetCustomAttribute<PipeRouteAttribute>(false)?.Route ?? x.Name.Replace("Controller", "").ToLowerInvariant(),
                     x => x);
@@ -32,14 +32,17 @@ namespace ExpertFunicular.Server
 
         public void StartListening(CancellationToken cancellationToken)
         {
+            if (_funicularServer.IsTerminated)
+                throw new FunicularException("Server client was terminated");
+            
             Task.Factory.StartNew(
-                () => _pipeServer.ReceivingLoop(HandlePipeRequest, cancellationToken), TaskCreationOptions.LongRunning);
+                () => _funicularServer.ReceivingLoop(HandlePipeRequest, cancellationToken), TaskCreationOptions.LongRunning);
         }
 
         private async Task HandlePipeRequest(FunicularMessage funicularMessage, CancellationToken cancellationToken)
         {
             if (funicularMessage.Route == FunicularMessage.EmptyRoute)
-                throw new FunicularPipeRouterException(_pipeServer.PipeName, funicularMessage.Route, "Requested empty route");
+                throw new FunicularPipeRouterException(_funicularServer.PipeName, funicularMessage.Route, "Requested empty route");
             
             var parts = funicularMessage.Route
                 .Split('/')
@@ -48,22 +51,17 @@ namespace ExpertFunicular.Server
                 .ToArray();
 
             if (parts.Length < 2)
-                throw new FunicularPipeRouterException(_pipeServer.PipeName, funicularMessage.Route, "Invalid path (#1)");
+                throw new FunicularPipeRouterException(_funicularServer.PipeName, funicularMessage.Route, "Invalid path (#1)");
             
             if (!_baseRoutePaths.TryGetValue(parts[0], out var controllerType))
-                throw new FunicularPipeRouterException(_pipeServer.PipeName, funicularMessage.Route, "Invalid path (#2)");
+                throw new FunicularPipeRouterException(_funicularServer.PipeName, funicularMessage.Route, "Invalid path (#2)");
 
             using var scope = _serviceProvider.CreateScope();
-            var controller = scope.ServiceProvider.GetRequiredService(controllerType) as PipeController;
+            var controller = scope.ServiceProvider.GetRequiredService(controllerType) as FunicularController;
             await controller!.HandlePipeRequest(funicularMessage, string.Join('/', parts.Skip(1)));
             
-            if (!controller.RequestMessage.IsPost)
-                await _pipeServer.SendAsync(controller.ResponseMessage, cancellationToken);
-        }
-        
-        public void Dispose()
-        {
-            _pipeServer.Dispose();
+            if (!funicularMessage.IsPost)
+                await _funicularServer.SendAsync(controller.ResponseMessage, cancellationToken);
         }
     }
 }

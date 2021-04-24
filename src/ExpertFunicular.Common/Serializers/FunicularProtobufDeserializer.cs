@@ -4,7 +4,7 @@ using ProtoBuf;
 
 namespace ExpertFunicular.Common.Serializers
 {
-    public class PipeProtobufDeserializer : IPipeDeserializer
+    public class FunicularProtobufDeserializer : IFunicularDeserializer
     {
         public TMessage Deserialize<TMessage>(byte[] array) where TMessage : class
         {
