@@ -25,7 +25,7 @@ namespace ExpertFunicular.Client
             lock (_sync)
             {
                 _pipeClient.Send(requestMessage);
-
+                
                 if (!_pipeClient.ReadMessage(out var responseMessage, timeoutMs))
                     throw new FunicularPipeException($"Nothing received within {timeoutMs} ms", requestMessage.Route);
 
@@ -60,6 +60,14 @@ namespace ExpertFunicular.Client
                     throw new FunicularPipeException($"Nothing received within {timeoutMs} ms", requestMessage.Route);
 
                 return HandleResponse<TResponse>(responseMessage);
+            }
+        }
+
+        public void SetErrorHandler(Action<string, Exception> errorHandler)
+        {
+            lock (_sync)
+            {
+                _pipeClient.SetErrorHandler(errorHandler);
             }
         }
 

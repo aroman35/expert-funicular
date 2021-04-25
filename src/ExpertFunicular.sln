@@ -19,8 +19,6 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ExpertFunicular.Integration
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ExpertFunicular.Tests.Common", "ExpertFunicular.Tests.Common\ExpertFunicular.Tests.Common.csproj", "{5DD0D090-94F2-4AAE-8613-FD5F02803332}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Sandbox", "Sandbox\Sandbox.csproj", "{107A644C-594E-4557-B9C7-5239BCF91F6F}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -118,18 +116,6 @@ Global
 		{5DD0D090-94F2-4AAE-8613-FD5F02803332}.Release|x64.Build.0 = Release|Any CPU
 		{5DD0D090-94F2-4AAE-8613-FD5F02803332}.Release|x86.ActiveCfg = Release|Any CPU
 		{5DD0D090-94F2-4AAE-8613-FD5F02803332}.Release|x86.Build.0 = Release|Any CPU
-		{107A644C-594E-4557-B9C7-5239BCF91F6F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{107A644C-594E-4557-B9C7-5239BCF91F6F}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{107A644C-594E-4557-B9C7-5239BCF91F6F}.Debug|x64.ActiveCfg = Debug|Any CPU
-		{107A644C-594E-4557-B9C7-5239BCF91F6F}.Debug|x64.Build.0 = Debug|Any CPU
-		{107A644C-594E-4557-B9C7-5239BCF91F6F}.Debug|x86.ActiveCfg = Debug|Any CPU
-		{107A644C-594E-4557-B9C7-5239BCF91F6F}.Debug|x86.Build.0 = Debug|Any CPU
-		{107A644C-594E-4557-B9C7-5239BCF91F6F}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{107A644C-594E-4557-B9C7-5239BCF91F6F}.Release|Any CPU.Build.0 = Release|Any CPU
-		{107A644C-594E-4557-B9C7-5239BCF91F6F}.Release|x64.ActiveCfg = Release|Any CPU
-		{107A644C-594E-4557-B9C7-5239BCF91F6F}.Release|x64.Build.0 = Release|Any CPU
-		{107A644C-594E-4557-B9C7-5239BCF91F6F}.Release|x86.ActiveCfg = Release|Any CPU
-		{107A644C-594E-4557-B9C7-5239BCF91F6F}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{E0CDE424-9FB3-4061-8B4E-67D6117D6749} = {2414B830-2F75-402D-BABA-E43A581E5265}

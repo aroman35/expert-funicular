@@ -39,6 +39,12 @@ namespace ExpertFunicular.Server
                 () => _funicularServer.ReceivingLoop(HandlePipeRequest, cancellationToken), TaskCreationOptions.LongRunning);
         }
 
+        public void StartListening(Action<Exception, string> errorHandler, CancellationToken cancellationToken)
+        {
+            _funicularServer.SetErrorHandler(errorHandler);
+            StartListening(cancellationToken);
+        }
+
         private async Task HandlePipeRequest(FunicularMessage funicularMessage, CancellationToken cancellationToken)
         {
             if (funicularMessage.Route == FunicularMessage.EmptyRoute)

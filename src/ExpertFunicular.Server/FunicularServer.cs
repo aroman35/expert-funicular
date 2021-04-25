@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics;
 using System.IO;
 using System.IO.Pipes;
 using System.Threading;
@@ -13,13 +14,14 @@ namespace ExpertFunicular.Server
     {
         private readonly NamedPipeServerStream _pipeServer;
         private readonly IFunicularSerializer _serializer;
+        private readonly IFunicularDeserializer _deserializer;
         public string PipeName { get; }
         public bool IsConnected => _pipeServer.IsConnected;
         public bool IsTerminated { get; private set; }
         
         public bool IsDisposed { get; private set; }
 
-        private Action<Exception, string> _exceptionHandler;
+        private Action<Exception, string> _errorHandler;
 
         public FunicularServer(string pipeName)
         {
@@ -31,6 +33,7 @@ namespace ExpertFunicular.Server
 
             PipeName = pipeName;
             _serializer = new FunicularProtobufSerializer();
+            _deserializer = new FunicularProtobufDeserializer();
         }
         
         public async Task SendAsync(FunicularMessage message, CancellationToken cancellationToken = default)
@@ -48,11 +51,11 @@ namespace ExpertFunicular.Server
             catch (IOException ioException)
             {
                 IsTerminated = true;
-                _exceptionHandler?.Invoke(ioException, $"Pipe is broken {PipeName}");
+                _errorHandler?.Invoke(ioException, $"Pipe is broken {PipeName}");
             }
             catch (Exception exception)
             {
-                _exceptionHandler?.Invoke(exception, $"Error listening pipe {PipeName}");
+                _errorHandler?.Invoke(exception, $"Error listening pipe {PipeName}");
             }
         }
 
@@ -64,23 +67,57 @@ namespace ExpertFunicular.Server
                 {
                     if (!_pipeServer.IsConnected)
                         await _pipeServer.WaitForConnectionAsync(cancellationToken);
-                    if (ReadMessage(out var message))
-                    {
-                        await payloadHandler(message, cancellationToken);
-                    }
+
+                    var testMessage = await ReadMessageAsync(cancellationToken);
+                    await payloadHandler(testMessage, cancellationToken);
                 }
                 catch (IOException ioException)
                 {
                     IsTerminated = true;
-                    _exceptionHandler?.Invoke(ioException, $"Pipe is broken {PipeName}");
+                    _errorHandler?.Invoke(ioException, $"Pipe is broken {PipeName}");
                 }
                 catch (Exception exception)
                 {
-                    _exceptionHandler?.Invoke(exception, $"Error listening pipe {PipeName}");
+                    _errorHandler?.Invoke(exception, $"Error listening pipe {PipeName}");
                 }
             }
         }
+
+        private async Task<FunicularMessage> ReadMessageAsync(CancellationToken cancellationToken)
+        {
+            _pipeServer.ReadMode = PipeTransmissionMode.Message;
+
+            try
+            {
+                if (_pipeServer.CanRead)
+                {
+                    var memoryStream = new MemoryStream();
+                    do
+                    {
+                        var memoryBuffer = new Memory<byte>(new byte[16]);
+                        var bytesRead = await _pipeServer.ReadAsync(memoryBuffer, cancellationToken);
+                        if (bytesRead == -1)
+                        {
+                            Debugger.Launch();
+                        }
+                        await memoryStream.WriteAsync(memoryBuffer[..bytesRead], cancellationToken);
+                    } while (!_pipeServer.IsMessageComplete);
+
+                    if (memoryStream.CanSeek)
+                        memoryStream.Seek(0, SeekOrigin.Begin);
+                    return _deserializer.Deserialize<FunicularMessage>(memoryStream);
+                }
+            }
+            catch (Exception exception)
+            {
+                _errorHandler?.Invoke(exception, PipeName);
+                return FunicularMessage.Default;
+            }
+
+            return FunicularMessage.Default;
+        }
         
+        [Obsolete("Use async ReadMessageAsync. Marked for deletion")]
         private bool ReadMessage(out FunicularMessage message)
         {
             try
@@ -108,9 +145,9 @@ namespace ExpertFunicular.Server
                 message = FunicularMessage.Default;
                 return false;
             }
-            catch (Exception e)
+            catch (Exception exception)
             {
-                Console.WriteLine(e);
+                _errorHandler?.Invoke(exception, PipeName);
                 message = FunicularMessage.Default;
                 return false;
             }
@@ -118,7 +155,7 @@ namespace ExpertFunicular.Server
 
         public void SetErrorHandler(Action<Exception, string> handler)
         {
-            _exceptionHandler = handler;
+            _errorHandler = handler;
         }
 
         public void Dispose()

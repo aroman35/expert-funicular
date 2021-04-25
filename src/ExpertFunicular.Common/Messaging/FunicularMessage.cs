@@ -8,7 +8,7 @@ using ProtoBuf;
 namespace ExpertFunicular.Common.Messaging
 {
     [ProtoContract]
-    public sealed class FunicularMessage
+    public sealed class FunicularMessage : IEquatable<FunicularMessage>
     {
         [ProtoMember(1)] public string Route { get; set; } = EmptyRoute;
         [ProtoMember(2)] public DateTime CreatedTimeUtc { get; set; }
@@ -22,6 +22,7 @@ namespace ExpertFunicular.Common.Messaging
         [ProtoIgnore] public bool IsError => !string.IsNullOrEmpty(ErrorMessage);
         [ProtoIgnore] public bool HasValue => CompressedMessage != null && CompressedMessage.Any();
         [ProtoIgnore] public static readonly string EmptyRoute = "empty";
+
         [ProtoIgnore] public static readonly FunicularMessage Default = new()
         {
             Route = EmptyRoute
@@ -33,7 +34,7 @@ namespace ExpertFunicular.Common.Messaging
                 throw new Exception("Message is empty");
             if (!IsValid())
                 throw new Exception("Message is invalid");
-            
+
             IFunicularDeserializer deserializer = Content switch
             {
                 ContentType.Protobuf => new FunicularProtobufDeserializer(),
@@ -72,17 +73,48 @@ namespace ExpertFunicular.Common.Messaging
 
             GetHash();
         }
-        
+
         private string GetHash()
         {
             MD5 md5 = new MD5CryptoServiceProvider();
             var hashes = md5.ComputeHash(CompressedMessage);
             return Md5Hash = hashes.Aggregate("", (current, b) => current + b.ToString("x2"));
         }
-        
+
         private bool IsValid()
         {
             return Md5Hash == GetHash();
+        }
+
+        public bool Equals(FunicularMessage other)
+        {
+            if (ReferenceEquals(null, other)) return false;
+            if (ReferenceEquals(this, other)) return true;
+            return string.Equals(Route, other.Route, StringComparison.InvariantCultureIgnoreCase) &&
+                   CreatedTimeUtc.Equals(other.CreatedTimeUtc) &&
+                   MessageType == other.MessageType &&
+                   string.Equals(ErrorMessage, other.ErrorMessage, StringComparison.InvariantCultureIgnoreCase) &&
+                   IsPost == other.IsPost &&
+                   Content == other.Content &&
+                   string.Equals(PipeName, other.PipeName, StringComparison.InvariantCultureIgnoreCase);
+        }
+
+        public override bool Equals(object obj)
+        {
+            return ReferenceEquals(this, obj) || obj is FunicularMessage other && Equals(other);
+        }
+
+        public override int GetHashCode()
+        {
+            var hashCode = new HashCode();
+            hashCode.Add(Route, StringComparer.InvariantCultureIgnoreCase);
+            hashCode.Add(CreatedTimeUtc);
+            hashCode.Add((int) MessageType);
+            hashCode.Add(ErrorMessage, StringComparer.InvariantCultureIgnoreCase);
+            hashCode.Add(IsPost);
+            hashCode.Add((int) Content);
+            hashCode.Add(PipeName, StringComparer.InvariantCultureIgnoreCase);
+            return hashCode.ToHashCode();
         }
     }
 }

@@ -13,6 +13,7 @@ namespace ExpertFunicular.Client
         private readonly NamedPipeClientStream _pipeClient;
         private readonly IFunicularSerializer _serializer;
         private readonly string _pipeName;
+        private Action<string, Exception> _errorHandler;
 
         public PipeClient(string pipeName)
         {
@@ -21,7 +22,7 @@ namespace ExpertFunicular.Client
                 ".",
                 pipeName,
                 PipeDirection.InOut);
-
+            
             _serializer = new FunicularProtobufSerializer();
         }
 
@@ -30,7 +31,7 @@ namespace ExpertFunicular.Client
             try
             {
                 var cancellationTokenSource = new CancellationTokenSource(timeoutMs);
-                while (!cancellationTokenSource.IsCancellationRequested)
+                while (!cancellationTokenSource.Token.IsCancellationRequested)
                 {
                     if (!_pipeClient.IsConnected)
                         _pipeClient.Connect(timeoutMs);
@@ -47,10 +48,10 @@ namespace ExpertFunicular.Client
                                 break;
                             memory.WriteByte((byte) readByte);
                         } while (!_pipeClient.IsMessageComplete);
-
+                        
                         if (memory.CanSeek)
                             memory.Seek(0, SeekOrigin.Begin);
-
+                        
                         message = Serializer.Deserialize<FunicularMessage>(memory);
                         return true;
                     }
@@ -58,9 +59,9 @@ namespace ExpertFunicular.Client
                 message = FunicularMessage.Default;
                 return false;
             }
-            catch (Exception e)
+            catch (Exception exception)
             {
-                Console.WriteLine(e);
+                _errorHandler?.Invoke(_pipeName, exception);
                 message = FunicularMessage.Default;
                 return false;
             }
@@ -68,23 +69,30 @@ namespace ExpertFunicular.Client
 
         public void Send(FunicularMessage message)
         {
-            message.PipeName = _pipeName;
-            if (!_pipeClient.IsConnected)
-                _pipeClient.Connect();
+            try
+            {
+                message.PipeName = _pipeName;
+                if (!_pipeClient.IsConnected)
+                    _pipeClient.Connect();
 
-            var cmp = new ReadOnlyMemory<byte>(_serializer.Serialize(message));
-            _pipeClient.Write(cmp.Span);
+                var cmp = new ReadOnlyMemory<byte>(_serializer.Serialize(message));
+                _pipeClient.Write(cmp.Span);
+            }
+            catch (Exception exception)
+            {
+                _errorHandler?.Invoke(_pipeName, exception);
+                throw;
+            }
         }
 
+        public void SetErrorHandler(Action<string, Exception> errorHandler)
+        {
+            _errorHandler = errorHandler;
+        }
+        
         public void Dispose()
         {
             _pipeClient.Dispose();
         }
-    }
-
-    internal interface IPipeClient : IDisposable
-    {
-        bool ReadMessage(out FunicularMessage message, int timeoutMs = 60_000);
-        void Send(FunicularMessage message);
     }
 }
