@@ -10,6 +10,7 @@ namespace ExpertFunicular.Server
         string PipeName { get; }
         bool IsConnected { get; }
         bool IsTerminated { get; }
+        bool IsDisposed { get; }
         Task ReceivingLoop(Func<FunicularMessage, CancellationToken, Task> payloadHandler, CancellationToken cancellationToken = default);
         Task SendAsync(FunicularMessage message, CancellationToken cancellationToken = default);
         void SetErrorHandler(Action<Exception, string> handler);

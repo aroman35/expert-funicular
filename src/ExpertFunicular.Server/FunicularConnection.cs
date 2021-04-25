@@ -63,5 +63,15 @@ namespace ExpertFunicular.Server
             if (!funicularMessage.IsPost)
                 await _funicularServer.SendAsync(controller.ResponseMessage, cancellationToken);
         }
+
+        public void Dispose()
+        {
+            _funicularServer.Dispose();
+        }
+
+        public ValueTask DisposeAsync()
+        {
+            return _funicularServer.DisposeAsync();
+        }
     }
 }

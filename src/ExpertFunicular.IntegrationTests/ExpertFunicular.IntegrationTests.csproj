@@ -20,6 +20,8 @@
     </ItemGroup>
 
     <ItemGroup>
+      <ProjectReference Include="..\ExpertFunicular.Client\ExpertFunicular.Client.csproj" />
+      <ProjectReference Include="..\ExpertFunicular.Server\ExpertFunicular.Server.csproj" />
       <ProjectReference Include="..\ExpertFunicular.Tests.Common\ExpertFunicular.Tests.Common.csproj" />
     </ItemGroup>
 

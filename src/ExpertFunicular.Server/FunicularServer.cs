@@ -16,6 +16,8 @@ namespace ExpertFunicular.Server
         public string PipeName { get; }
         public bool IsConnected => _pipeServer.IsConnected;
         public bool IsTerminated { get; private set; }
+        
+        public bool IsDisposed { get; private set; }
 
         private Action<Exception, string> _exceptionHandler;
 
@@ -122,11 +124,13 @@ namespace ExpertFunicular.Server
         public void Dispose()
         {
             _pipeServer.Dispose();
+            IsDisposed = true;
         }
 
-        public ValueTask DisposeAsync()
+        public async ValueTask DisposeAsync()
         {
-            return _pipeServer.DisposeAsync();
+            await _pipeServer.DisposeAsync();
+            IsDisposed = true;
         }
     }
 }

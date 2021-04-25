@@ -28,7 +28,7 @@ namespace ExpertFunicular.Server
         {
             lock (Sync)
             {
-                if (_servers.TryGetValue(pipeName, out var existingServer) && !existingServer.IsTerminated)
+                if (_servers.TryGetValue(pipeName, out var existingServer) && !existingServer.IsTerminated && !existingServer.IsDisposed)
                     return new FunicularConnection(existingServer, _serviceProvider);
                 
                 existingServer = new FunicularServer(pipeName);
