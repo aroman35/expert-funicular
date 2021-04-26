@@ -17,7 +17,14 @@ namespace ExpertFunicular.Common.Messaging
         [ProtoMember(5)] public string ErrorMessage { get; set; }
         [ProtoMember(6)] public bool IsPost { get; set; }
         [ProtoMember(7)] public ContentType Content { get; private set; } = ContentType.Protobuf;
-        [ProtoMember(8)] public string Md5Hash { get; private set; }
+
+        [ProtoMember(8)]
+        public string Md5Hash
+        {
+            get => HasValue ? _md5Hash : new string(Enumerable.Repeat(' ', 32).ToArray());
+            private set => _md5Hash = value;
+        }
+
         [ProtoMember(9)] public string PipeName { get; set; }
         [ProtoIgnore] public bool IsError => !string.IsNullOrEmpty(ErrorMessage);
         [ProtoIgnore] public bool HasValue => CompressedMessage != null && CompressedMessage.Any();
@@ -27,6 +34,8 @@ namespace ExpertFunicular.Common.Messaging
         {
             Route = EmptyRoute
         };
+
+        private string _md5Hash;
 
         public object GetPayload(Type messageType)
         {

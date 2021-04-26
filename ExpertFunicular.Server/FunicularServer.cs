@@ -48,7 +48,7 @@ namespace ExpertFunicular.Server
                     if (!_pipeServer.IsConnected)
                         await _pipeServer.WaitForConnectionAsync(cancellationToken);
 
-                    if (_pipeServer.CanRead && _pipeServer.ReadMessageUnsafe(out var message))
+                    if (_pipeServer.CanRead && _pipeServer.ReadMessage(out var message))
                         await payloadHandler(message, cancellationToken);
                 }
                 catch (IOException ioException)
@@ -66,7 +66,7 @@ namespace ExpertFunicular.Server
         public void Send(FunicularMessage message)
         {
             if (_pipeServer.CanWrite)
-                _pipeServer.WriteMessageUnsafe(message);
+                _pipeServer.WriteMessage(message);
         }
         
         public void SetErrorHandler(Action<Exception, string> handler)

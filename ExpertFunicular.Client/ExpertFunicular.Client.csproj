@@ -6,7 +6,6 @@
         <Company>Romanov Aleksey</Company>
         <Authors>Romanov Aleksey</Authors>
         <Description>A named pipe client</Description>
-        <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     </PropertyGroup>
 
     <ItemGroup>

@@ -80,13 +80,13 @@ namespace ExpertFunicular.Client
                 _pipeClient.Connect();
             
             if (_pipeClient.CanWrite)
-                _pipeClient.WriteMessageUnsafe(message);
+                _pipeClient.WriteMessage(message);
         }
         
         public bool ReadMessageCommon(out FunicularMessage message)
         {
             if (_pipeClient.CanRead)
-                return _pipeClient.ReadMessageUnsafe(out message);
+                return _pipeClient.ReadMessage(out message);
             
             message = FunicularMessage.Default;
             return false;
