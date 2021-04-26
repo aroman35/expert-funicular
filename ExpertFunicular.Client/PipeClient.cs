@@ -78,39 +78,18 @@ namespace ExpertFunicular.Client
             
             if (!_pipeClient.IsConnected)
                 _pipeClient.Connect();
-            _pipeClient.WriteMessage(message);
+            
+            if (_pipeClient.CanWrite)
+                _pipeClient.WriteMessageUnsafe(message);
         }
         
         public bool ReadMessageCommon(out FunicularMessage message)
         {
             if (_pipeClient.CanRead)
-                return _pipeClient.ReadMessage(out message);
+                return _pipeClient.ReadMessageUnsafe(out message);
             
             message = FunicularMessage.Default;
             return false;
-        }
-        
-        private unsafe void SendUnsafe(FunicularMessage message)
-        {
-            message.PipeName = _pipeName;
-            message.CreatedTimeUtc = DateTime.UtcNow;
-            
-            if (!_pipeClient.IsConnected)
-                _pipeClient.Connect();
-            
-            var compressedMessage = new Span<byte>(_serializer.Serialize(message));
-            var messageSizeCompressed = new Span<byte>(BitConverter.GetBytes(compressedMessage.Length));
-            
-            fixed (byte* sizePtr = messageSizeCompressed)
-                _pipeClient.WriteByte(*sizePtr);
-            
-            fixed (byte* msgPtr = compressedMessage)
-                _pipeClient.WriteByte(*msgPtr);
-
-            var md5Compressed = new Span<byte>(Encoding.UTF8.GetBytes(message.Md5Hash));
-            
-            fixed (byte* md5Ptr = md5Compressed)
-                _pipeClient.WriteByte(*md5Ptr);
         }
 
         public void SetErrorHandler(Action<string, Exception> errorHandler)
