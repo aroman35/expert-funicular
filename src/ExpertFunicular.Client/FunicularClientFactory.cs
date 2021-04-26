@@ -7,7 +7,7 @@ namespace ExpertFunicular.Client
     {
         private static FunicularClientFactory _factory;
         private static readonly object Sync = new();
-        private readonly ConcurrentDictionary<string, IFunicularClient> _clients;
+        private readonly ConcurrentDictionary<string, IPipeClient> _clients;
 
         public static FunicularClientFactory New()
         {
@@ -17,19 +17,19 @@ namespace ExpertFunicular.Client
         
         private FunicularClientFactory()
         {
-            _clients = new ConcurrentDictionary<string, IFunicularClient>();
+            _clients = new ConcurrentDictionary<string, IPipeClient>();
         }
         
         public IFunicularClient CreateClient(string pipeName)
         {
             lock (Sync)
             {
-                if (_clients.TryGetValue(pipeName, out var existingClient))
-                    return existingClient;
+                if (_clients.TryGetValue(pipeName, out var existingClient) && !existingClient.IsDisposed)
+                    return new FunicularClient(existingClient);
                 
-                existingClient = new FunicularClient(new PipeClient(pipeName));
+                existingClient = new PipeClient(pipeName);
                 _clients.TryAdd(pipeName, existingClient);
-                return existingClient;
+                return new FunicularClient(existingClient);
             }
         }
 

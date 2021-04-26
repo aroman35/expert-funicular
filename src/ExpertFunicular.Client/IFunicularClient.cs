@@ -3,7 +3,7 @@ using ExpertFunicular.Common.Messaging;
 
 namespace ExpertFunicular.Client
 {
-    public interface IFunicularClient
+    public interface IFunicularClient : IDisposable
     {
         TResponse Send<TRequest, TResponse>(string uri, TRequest request, int timeoutMs = 30_000, ContentType desiredContent = ContentType.Protobuf);
         void Send<TRequest>(string uri, TRequest request, ContentType desiredContent = ContentType.Protobuf);

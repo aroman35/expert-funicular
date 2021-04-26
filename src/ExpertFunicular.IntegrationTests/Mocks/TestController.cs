@@ -1,7 +1,7 @@
 ﻿using System.Threading.Tasks;
 using ExpertFunicular.Server;
 
-namespace ExpertFunicular.IntegrationTests
+namespace ExpertFunicular.IntegrationTests.Mocks
 {
     [PipeRoute("test")]
     public class TestController : FunicularController

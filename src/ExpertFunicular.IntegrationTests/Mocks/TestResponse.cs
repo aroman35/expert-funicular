@@ -1,4 +1,4 @@
-﻿namespace ExpertFunicular.IntegrationTests
+﻿namespace ExpertFunicular.IntegrationTests.Mocks
 {
     public class TestResponse
     {

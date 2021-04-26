@@ -3,13 +3,14 @@ using System.Diagnostics;
 using System.Linq;
 using System.Threading;
 using ExpertFunicular.Client;
+using ExpertFunicular.IntegrationTests.Mocks;
 using ExpertFunicular.Server;
 using Microsoft.Extensions.DependencyInjection;
 using Shouldly;
 using Xunit;
 using Xunit.Abstractions;
 
-namespace ExpertFunicular.IntegrationTests
+namespace ExpertFunicular.IntegrationTests.Tests
 {
     public class SyncControllerTests
     {

@@ -14,6 +14,8 @@ namespace ExpertFunicular.Client
         private readonly IFunicularSerializer _serializer;
         private readonly string _pipeName;
         private Action<string, Exception> _errorHandler;
+        
+        public bool IsDisposed { get; private set; }
 
         public PipeClient(string pipeName)
         {
@@ -93,6 +95,7 @@ namespace ExpertFunicular.Client
         public void Dispose()
         {
             _pipeClient.Dispose();
+            IsDisposed = true;
         }
     }
 }

@@ -80,5 +80,13 @@ namespace ExpertFunicular.Client
                 
             return (TResponse) pipeMessage.GetPayload(typeof(TResponse));
         }
+
+        /// <summary>
+        /// When it is called disposed, the pipe stream disposes too. If it is the only client for the pipe, the pipe becomes broken
+        /// </summary>
+        public void Dispose()
+        {
+            _pipeClient.Dispose();
+        }
     }
 }
