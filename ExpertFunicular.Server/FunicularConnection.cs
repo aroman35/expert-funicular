@@ -36,7 +36,7 @@ namespace ExpertFunicular.Server
                 throw new FunicularException("Server client was terminated");
             
             Task.Factory.StartNew(
-                () => _funicularServer.ReceivingLoop(HandlePipeRequest, cancellationToken), TaskCreationOptions.LongRunning);
+                () => _funicularServer.ListenPipe(HandlePipeRequest, cancellationToken), TaskCreationOptions.LongRunning);
         }
 
         public void StartListening(Action<Exception, string> errorHandler, CancellationToken cancellationToken)
@@ -67,7 +67,7 @@ namespace ExpertFunicular.Server
             await controller!.HandlePipeRequest(funicularMessage, string.Join('/', parts.Skip(1)));
             
             if (!funicularMessage.IsPost)
-                await _funicularServer.SendAsync(controller.ResponseMessage, cancellationToken);
+                _funicularServer.Send(controller.ResponseMessage);
         }
 
         public void Dispose()

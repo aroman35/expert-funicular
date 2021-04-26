@@ -9,5 +9,6 @@ namespace ExpertFunicular.Client
         bool ReadMessage(out FunicularMessage message, int timeoutMs = 60_000);
         void Send(FunicularMessage message);
         void SetErrorHandler(Action<string, Exception> errorHandler);
+        bool ReadMessageCommon(out FunicularMessage message);
     }
 }

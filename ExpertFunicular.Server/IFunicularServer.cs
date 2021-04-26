@@ -12,7 +12,10 @@ namespace ExpertFunicular.Server
         bool IsTerminated { get; }
         bool IsDisposed { get; }
         Task ReceivingLoop(Func<FunicularMessage, CancellationToken, Task> payloadHandler, CancellationToken cancellationToken = default);
+        Task ListenPipe(Func<FunicularMessage, CancellationToken, Task> payloadHandler, CancellationToken cancellationToken = default);
         Task SendAsync(FunicularMessage message, CancellationToken cancellationToken = default);
         void SetErrorHandler(Action<Exception, string> handler);
+        bool ReadMessageCommon(out FunicularMessage message);
+        void Send(FunicularMessage message);
     }
 }
