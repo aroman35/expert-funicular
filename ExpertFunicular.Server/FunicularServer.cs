@@ -1,23 +1,16 @@
 ﻿using System;
-using System.Diagnostics;
 using System.IO;
 using System.IO.Pipes;
-using System.Runtime.Versioning;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using ExpertFunicular.Common;
 using ExpertFunicular.Common.Messaging;
-using ExpertFunicular.Common.Serializers;
-using ProtoBuf;
 
 namespace ExpertFunicular.Server
 {
     internal class FunicularServer : IFunicularServer
     {
         private readonly NamedPipeServerStream _pipeServer;
-        private readonly IFunicularSerializer _serializer;
-        private readonly IFunicularDeserializer _deserializer;
         public string PipeName { get; }
         public bool IsConnected => _pipeServer.IsConnected;
         public bool IsTerminated { get; private set; }
@@ -35,8 +28,6 @@ namespace ExpertFunicular.Server
                 PipeOptions.Asynchronous);
 
             PipeName = pipeName;
-            _serializer = new FunicularProtobufSerializer();
-            _deserializer = new FunicularProtobufDeserializer();
         }
 
         public async Task StartListening(Func<FunicularMessage, CancellationToken, Task> payloadHandler, CancellationToken cancellationToken = default)
