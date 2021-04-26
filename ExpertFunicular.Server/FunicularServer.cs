@@ -117,6 +117,28 @@ namespace ExpertFunicular.Server
 
             return FunicularMessage.Default;
         }
+
+        private unsafe bool ReadMessageCommon(out FunicularMessage message)
+        {
+            _pipeServer.ReadMode = PipeTransmissionMode.Byte;
+            var messageSizeBuffer = new byte[4];
+
+            for (var i = 0; i < 4; i++)
+                messageSizeBuffer[i] = (byte)_pipeServer.ReadByte();
+
+            var messageSize = BitConverter.ToInt32(messageSizeBuffer);
+            var messageEncoded = messageSize < 1024 * 1024 ? stackalloc byte[messageSize] : new Span<byte>(new byte[messageSize]);
+            
+            for (var i = 0; i < messageSize; i++)
+                messageEncoded[i] = (byte)_pipeServer.ReadByte();
+
+            var memoryStream = new MemoryStream();
+            fixed (byte* messagePtr = messageEncoded)
+                memoryStream.WriteByte(*messagePtr);
+            memoryStream.Seek(0, SeekOrigin.Begin);
+            message = _deserializer.Deserialize<FunicularMessage>(memoryStream);
+            return true;
+        }
         
         [Obsolete("Use async ReadMessageAsync. Marked for deletion")]
         private bool ReadMessage(out FunicularMessage message)
