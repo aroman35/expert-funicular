@@ -17,6 +17,7 @@ namespace ExpertFunicular.Common
             FunicularSerializer = new FunicularProtobufSerializer();
             FunicularDeserializer = new FunicularProtobufDeserializer();
         }
+
         public static void WriteMessage(this PipeStream pipeStream, FunicularMessage message)
         {
             var compressedMessage = FunicularSerializer.Serialize(message);
@@ -27,6 +28,7 @@ namespace ExpertFunicular.Common
             pipeStream.Write(compressedMessage);
             pipeStream.Write(md5Compressed);
         }
+
         public static bool ReadMessage(this PipeStream pipeStream, out FunicularMessage message)
         {
             var compressedSize = pipeStream.Read(4);
@@ -37,12 +39,34 @@ namespace ExpertFunicular.Common
             var md5 = Encoding.UTF8.GetString(md5Compressed);
             return md5 == message.Md5Hash;
         }
-        private static byte[] Read(this Stream pipeStream, int length)
-        {
-            var buffer = new byte[length];
-            pipeStream.Read(buffer, 0, length);
 
-            return buffer;
+        private static unsafe byte[] Read(this Stream stream, int length)
+        {
+            var bufferSize = 00002000;
+            var totalRead = 0x0;
+
+            var bufferSizePtr = &bufferSize;
+            var totalReadPtr = &totalRead;
+
+            var buffer = length < 0x00100000 ? stackalloc byte[length] : new byte[length];
+
+            fixed (byte* bufferPtr = buffer)
+            {
+                while (stream.CanRead && *totalReadPtr != length)
+                {
+                    var remained = length - *totalReadPtr;
+
+                    var smallBuffer = new byte[remained < *bufferSizePtr ? remained : *bufferSizePtr];
+                    var bytesRead = stream.Read(smallBuffer, 0, smallBuffer.Length);
+
+                    for (var i = 0; i < smallBuffer.Length; i++)
+                        *(bufferPtr + *totalReadPtr + i) = smallBuffer[i];
+                    
+                    *totalReadPtr += bytesRead;
+                }
+            }
+
+            return buffer.ToArray();
         }
     }
 }

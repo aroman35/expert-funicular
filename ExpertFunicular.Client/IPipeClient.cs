@@ -8,6 +8,6 @@ namespace ExpertFunicular.Client
         bool IsDisposed { get; }
         void Send(FunicularMessage message);
         void SetErrorHandler(Action<string, Exception> errorHandler);
-        bool ReadMessageCommon(out FunicularMessage message);
+        bool ReadMessage(out FunicularMessage message);
     }
 }
