@@ -36,7 +36,7 @@ namespace ExpertFunicular.Server
                 throw new FunicularException("Server client was terminated");
             
             Task.Factory.StartNew(
-                () => _funicularServer.ReceivingLoop(HandlePipeRequest, cancellationToken), TaskCreationOptions.LongRunning);
+                () => _funicularServer.StartListening(HandlePipeRequest, cancellationToken), TaskCreationOptions.LongRunning);
         }
 
         public void StartListening(Action<Exception, string> errorHandler, CancellationToken cancellationToken)
@@ -48,7 +48,13 @@ namespace ExpertFunicular.Server
         private async Task HandlePipeRequest(FunicularMessage funicularMessage, CancellationToken cancellationToken)
         {
             if (funicularMessage.Route == FunicularMessage.EmptyRoute)
+            {
+                _funicularServer.Send(new FunicularMessage
+                {
+                    ErrorMessage = "Requested empty route"
+                });
                 throw new FunicularPipeRouterException(_funicularServer.PipeName, funicularMessage.Route, "Requested empty route");
+            }
             
             var parts = funicularMessage.Route
                 .Split('/')
@@ -57,17 +63,29 @@ namespace ExpertFunicular.Server
                 .ToArray();
 
             if (parts.Length < 2)
+            {
+                _funicularServer.Send(new FunicularMessage
+                {
+                    ErrorMessage = "Requested invalid route"
+                });
                 throw new FunicularPipeRouterException(_funicularServer.PipeName, funicularMessage.Route, "Invalid path (#1)");
+            }
             
             if (!_baseRoutePaths.TryGetValue(parts[0], out var controllerType))
+            {
+                _funicularServer.Send(new FunicularMessage
+                {
+                    ErrorMessage = "Requested invalid route"
+                });
                 throw new FunicularPipeRouterException(_funicularServer.PipeName, funicularMessage.Route, "Invalid path (#2)");
+            }
 
             using var scope = _serviceProvider.CreateScope();
             var controller = scope.ServiceProvider.GetRequiredService(controllerType) as FunicularController;
             await controller!.HandlePipeRequest(funicularMessage, string.Join('/', parts.Skip(1)));
             
             if (!funicularMessage.IsPost)
-                await _funicularServer.SendAsync(controller.ResponseMessage, cancellationToken);
+                _funicularServer.Send(controller.ResponseMessage);
         }
 
         public void Dispose()

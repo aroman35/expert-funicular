@@ -29,10 +29,26 @@ namespace ExpertFunicular.Server
             RequestMessage = funicularMessage;
             Route = route;
             if (funicularMessage.MessageType == FunicularMessageType.Response)
-                throw ControllerException("Expected request, but received response");
+            {
+                ResponseMessage = new FunicularMessage
+                {
+                    MessageType = FunicularMessageType.Response,
+                    ErrorMessage = "Expected request, but received response"
+                };
+                return;
+                // throw ControllerException("Expected request, but received response");
+            }
 
             if (!_actionMethodInputParameters.TryGetValue(Route, out var callingMethod))
-                throw ControllerException($"Method \"{Route}\" is not declared");
+            {
+                ResponseMessage = new FunicularMessage
+                {
+                    MessageType = FunicularMessageType.Response,
+                    ErrorMessage = $"Method \"{Route}\" is not declared"
+                };
+                return;
+                // throw ControllerException($"Method \"{Route}\" is not declared");
+            }
             
             var inputType = callingMethod
                 .GetParameters()

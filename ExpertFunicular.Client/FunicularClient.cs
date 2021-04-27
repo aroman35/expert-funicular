@@ -26,7 +26,7 @@ namespace ExpertFunicular.Client
             {
                 _pipeClient.Send(requestMessage);
                 
-                if (!_pipeClient.ReadMessage(out var responseMessage, timeoutMs))
+                if (!_pipeClient.ReadMessage(out var responseMessage))
                     throw new FunicularPipeException($"Nothing received within {timeoutMs} ms", requestMessage.Route);
 
                 return HandleResponse<TResponse>(responseMessage);
@@ -56,9 +56,11 @@ namespace ExpertFunicular.Client
             {
                 _pipeClient.Send(requestMessage);
                 
-                if (!_pipeClient.ReadMessage(out var responseMessage, timeoutMs))
+                if (!_pipeClient.ReadMessage(out var responseMessage))
                     throw new FunicularPipeException($"Nothing received within {timeoutMs} ms", requestMessage.Route);
 
+                if (responseMessage.IsError)
+                    throw new FunicularPipeException(requestMessage.ErrorMessage, requestMessage.Route);
                 return HandleResponse<TResponse>(responseMessage);
             }
         }

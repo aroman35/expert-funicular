@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Linq;
+using System.Reflection;
 using System.Security.Cryptography;
 using ExpertFunicular.Common.Exceptions;
 using ExpertFunicular.Common.Serializers;
@@ -10,6 +11,9 @@ namespace ExpertFunicular.Common.Messaging
     [ProtoContract]
     public sealed class FunicularMessage : IEquatable<FunicularMessage>
     {
+        [ProtoIgnore]
+        private static readonly string EmptyHash = new(Enumerable.Repeat(' ', 32).ToArray());
+
         [ProtoMember(1)] public string Route { get; set; } = EmptyRoute;
         [ProtoMember(2)] public DateTime CreatedTimeUtc { get; set; }
         [ProtoMember(3)] public FunicularMessageType MessageType { get; set; }
@@ -17,7 +21,14 @@ namespace ExpertFunicular.Common.Messaging
         [ProtoMember(5)] public string ErrorMessage { get; set; }
         [ProtoMember(6)] public bool IsPost { get; set; }
         [ProtoMember(7)] public ContentType Content { get; private set; } = ContentType.Protobuf;
-        [ProtoMember(8)] public string Md5Hash { get; private set; }
+
+        [ProtoMember(8)]
+        public string Md5Hash
+        {
+            get => HasValue ? _md5Hash : new string(Enumerable.Repeat(' ', 32).ToArray());
+            private set => _md5Hash = value;
+        }
+
         [ProtoMember(9)] public string PipeName { get; set; }
         [ProtoIgnore] public bool IsError => !string.IsNullOrEmpty(ErrorMessage);
         [ProtoIgnore] public bool HasValue => CompressedMessage != null && CompressedMessage.Any();
@@ -27,6 +38,8 @@ namespace ExpertFunicular.Common.Messaging
         {
             Route = EmptyRoute
         };
+
+        private string _md5Hash;
 
         public object GetPayload(Type messageType)
         {
@@ -49,28 +62,22 @@ namespace ExpertFunicular.Common.Messaging
 
         public void SetPayload(object payload, ContentType content = ContentType.Protobuf, bool onErrorUseJson = true)
         {
+            var isProtobufSupported = payload.GetType().GetCustomAttributes<ProtoContractAttribute>().Any();
             Content = content;
             IFunicularSerializer serializer = Content switch
             {
-                ContentType.Protobuf => new FunicularProtobufSerializer(),
+                ContentType.Protobuf => isProtobufSupported
+                    ? new FunicularProtobufSerializer()
+                    : new FunicularJsonSerializer(),
                 ContentType.Json => new FunicularJsonSerializer(),
                 ContentType.Text => new FunicularTextSerializer(),
                 ContentType.NotSet => throw new FunicularException("Content type is not set"),
                 _ => throw new FunicularException("Content type is not set")
             };
-            try
-            {
-                CompressedMessage = serializer.Serialize(payload);
-            }
-            catch
-            {
-                if (onErrorUseJson)
-                {
-                    CompressedMessage = new FunicularJsonSerializer().Serialize(payload);
-                    Content = ContentType.Json;
-                }
-            }
+            CompressedMessage = serializer.Serialize(payload);
 
+            if (Content == ContentType.Protobuf && !isProtobufSupported)
+                Content = ContentType.Json;
             GetHash();
         }
 
